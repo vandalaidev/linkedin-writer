@@ -4,6 +4,9 @@ export default async function handler(req, res) {
   const { topic, tone, goal } = req.body;
   if (!topic || !tone || !goal) return res.status(400).json({ error: "Missing fields" });
 
+  console.log("API Key exists:", !!process.env.ANTHROPIC_API_KEY);
+  console.log("Topic:", topic);
+
   try {
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
@@ -24,9 +27,17 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-    const post = data.content?.[0]?.text || "Error generating post";
+    console.log("Response status:", response.status);
+    console.log("Response data:", data);
+
+    if (!response.ok) {
+      return res.status(response.status).json({ error: data.error?.message || "API error" });
+    }
+
+    const post = data.content?.[0]?.text || "No content returned";
     res.status(200).json({ post });
   } catch (error) {
-    res.status(500).json({ error: "Failed to generate post" });
+    console.error("Error:", error.message);
+    res.status(500).json({ error: error.message });
   }
 }
